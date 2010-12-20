@@ -321,6 +321,12 @@ class InputTest < ActionView::TestCase
     assert_no_select 'select option[value=]', /^$/
   end
 
+  test 'priority input should not generate invalid required html attribute' do
+    with_input_for @user, :country, :country
+    assert_select 'select.required'
+    assert_no_select 'select[required]'
+  end
+
   # DateTime input
   test 'input should generate a datetime select by default for datetime attributes' do
     with_input_for @user, :created_at, :datetime
@@ -395,6 +401,12 @@ class InputTest < ActionView::TestCase
     assert_select 'label[for=project_created_at_4i]'
   end
 
+  test 'date time input should not generate invalid required html attribute' do
+    with_input_for @user, :delivery_time, :time, :required => true
+    assert_select 'select.required'
+    assert_no_select 'select[required]'
+  end
+
   # CollectionInput
   test 'input should generate boolean radio buttons by default for radio types' do
     with_input_for @user, :active, :radio
@@ -450,6 +462,28 @@ class InputTest < ActionView::TestCase
     assert_select 'select option[selected=selected]', '18'
   end
 
+  test 'input should set the correct value when using a collection that includes floats' do
+    with_input_for @user, :age, :select, :collection => [2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
+    assert_select 'select option[value="2.0"]'
+    assert_select 'select option[value="2.5"]'
+  end
+
+  test 'input should set the correct values when using a collection that uses mixed values' do
+    with_input_for @user, :age, :select, :collection => ["Hello Kitty", 2, 4.5, :johnny, nil, true, false]
+    assert_select 'select option[value="Hello Kitty"]'
+    assert_select 'select option[value="2"]'
+    assert_select 'select option[value="4.5"]'
+    assert_select 'select option[value="johnny"]'
+    assert_select 'select option[value=""]'
+    assert_select 'select option[value="true"]'
+    assert_select 'select option[value="false"]'
+  end
+
+  test 'input should include a blank option even if :include_blank is set to false if the collection includes a nil value' do
+    with_input_for @user, :age, :select, :collection => [nil], :include_blank => false
+    assert_select 'select option[value=""]'
+  end
+
   test 'input should automatically set include blank' do
     with_input_for @user, :age, :select, :collection => 18..30
     assert_select 'select option[value=]', ''
@@ -499,6 +533,22 @@ class InputTest < ActionView::TestCase
     assert_select 'label.collection_radio', 'Carlos'
   end
 
+  test 'input should allow overriding only label method for collections' do
+    with_input_for @user, :name, :radio,
+                          :collection => ['Jose' , 'Carlos'],
+                          :label_method => :upcase
+    assert_select 'label.collection_radio', 'JOSE'
+    assert_select 'label.collection_radio', 'CARLOS'
+  end
+
+  test 'input should allow overriding only value method for collections' do
+    with_input_for @user, :name, :radio,
+                          :collection => ['Jose' , 'Carlos'],
+                          :value_method => :upcase
+    assert_select 'input[type=radio][value=JOSE]'
+    assert_select 'input[type=radio][value=CARLOS]'
+  end
+
   test 'input should allow overriding label and value method for collections' do
     with_input_for @user, :name, :radio,
                           :collection => ['Jose' , 'Carlos'],
@@ -526,6 +576,18 @@ class InputTest < ActionView::TestCase
     assert_select 'select.select#user_name'
     assert_select 'select option[value=jose]', 'jose'
     assert_select 'select option[value=carlos]', 'carlos'
+  end
+
+  test 'collection input with radio type should generate required html attribute' do
+    with_input_for @user, :name, :radio, :collection => ['Jose' , 'Carlos']
+    assert_select 'input[type=radio].required'
+    assert_select 'input[type=radio][required]'
+  end
+
+  test 'collection input with select type should not generate invalid required html attribute' do
+    with_input_for @user, :name, :select, :collection => ['Jose' , 'Carlos']
+    assert_select 'select.required'
+    assert_no_select 'select[required]'
   end
 
   # With no object
